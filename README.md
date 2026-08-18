@@ -133,3 +133,12 @@ build.sh
 
 Detalhe importante: além do event tap, existe um monitor local de teclado dentro do app. Ou seja,
 **a combinação de saída funciona mesmo sem a permissão de Acessibilidade** — você nunca fica preso.
+
+---
+
+## Licença
+
+Domínio público ([The Unlicense](LICENSE)). Use, copie, modifique e distribua à vontade,
+para qualquer fim, sem pedir permissão e sem precisar dar crédito.
+
+Este projeto não tem afiliação com o TinyFingers.

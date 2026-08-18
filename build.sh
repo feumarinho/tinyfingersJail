@@ -36,6 +36,10 @@ echo "==> Montando o bundle em $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+# Ícone é opcional: se existir Resources/AppIcon.icns (não versionado), entra no bundle.
+if [[ -f Resources/AppIcon.icns ]]; then
+  cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+fi
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 ARCH="$(uname -m)"

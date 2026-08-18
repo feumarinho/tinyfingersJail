@@ -6,6 +6,8 @@
 	<string>pt_BR</string>
 	<key>CFBundleExecutable</key>
 	<string>TinyFingersJail</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.tinyfingersjail.app</string>
 	<key>CFBundleInfoDictionaryVersion</key>
