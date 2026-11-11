@@ -11,6 +11,13 @@ final class OverlayView: NSView {
     private let barFill = NSView()
     private var hintHideWork: DispatchWorkItem?
 
+    private let cornerMarker = NSView()
+    private let cornerLabel = OverlayView.makeLabel(size: 10, weight: .semibold)
+    private var cornerPosition: CornerPosition = .topRight
+    private var cornerSize: CGFloat = 72
+    private var cornerAlwaysVisible = false
+    private var cornerHideWork: DispatchWorkItem?
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setup()
@@ -48,7 +55,21 @@ final class OverlayView: NSView {
         panel.addSubview(panelLabel)
         panel.addSubview(barTrack)
         addSubview(panel)
+
+        // Área de clique da saída pelo canto.
+        cornerMarker.wantsLayer = true
+        cornerMarker.layer?.backgroundColor = OverlayView.cornerIdleFill.cgColor
+        cornerMarker.layer?.borderColor = NSColor(white: 1, alpha: 0.4).cgColor
+        cornerMarker.layer?.borderWidth = 1
+        cornerMarker.layer?.cornerRadius = 14
+        cornerMarker.alphaValue = 0
+        cornerLabel.stringValue = "sair"
+        addSubview(cornerMarker)
+        cornerMarker.addSubview(cornerLabel)
     }
+
+    private static let cornerIdleFill = NSColor(white: 1, alpha: 0.08)
+    private static let cornerActiveFill = NSColor(white: 1, alpha: 0.24)
 
     // MARK: - Layout
 
@@ -74,6 +95,25 @@ final class OverlayView: NSView {
         panelLabel.frame = NSRect(x: 20, y: 56, width: panelSize.width - 40, height: 26)
         barTrack.frame = NSRect(x: 24, y: 28, width: panelSize.width - 48, height: 10)
         applyProgressFrame()
+
+        cornerMarker.frame = cornerFrame()
+        cornerLabel.frame = NSRect(x: 0, y: (cornerSize - 14) / 2, width: cornerSize, height: 14)
+    }
+
+    private func cornerFrame() -> NSRect {
+        let size = cornerSize
+        let origin: NSPoint
+        switch cornerPosition {
+        case .topRight:
+            origin = NSPoint(x: bounds.maxX - size, y: bounds.maxY - size)
+        case .topLeft:
+            origin = NSPoint(x: bounds.minX, y: bounds.maxY - size)
+        case .bottomRight:
+            origin = NSPoint(x: bounds.maxX - size, y: bounds.minY)
+        case .bottomLeft:
+            origin = NSPoint(x: bounds.minX, y: bounds.minY)
+        }
+        return NSRect(origin: origin, size: NSSize(width: size, height: size))
     }
 
     private var progress: Double = 0 {
@@ -123,6 +163,47 @@ final class OverlayView: NSView {
         panelLabel.stringValue = message
         panel.alphaValue = 1
         self.progress = progress
+    }
+
+    // MARK: - Área de clique do canto
+
+    func configureCorner(position: CornerPosition, size: Double, alwaysVisible: Bool) {
+        cornerPosition = position
+        cornerSize = CGFloat(size)
+        cornerAlwaysVisible = alwaysVisible
+        needsLayout = true
+        if alwaysVisible {
+            showCorner(duration: 0)
+        }
+    }
+
+    /// Mostra a área de clique. `duration == 0` deixa visível para sempre.
+    func showCorner(duration: TimeInterval) {
+        cornerHideWork?.cancel()
+        animateCorner(to: 1)
+
+        guard duration > 0, !cornerAlwaysVisible else { return }
+        let work = DispatchWorkItem { [weak self] in self?.animateCorner(to: 0) }
+        cornerHideWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration, execute: work)
+    }
+
+    /// Enquanto o canto está pressionado ele acende, mesmo que estivesse escondido.
+    func setCornerHighlighted(_ highlighted: Bool) {
+        cornerHideWork?.cancel()
+        cornerMarker.layer?.backgroundColor = (highlighted ? OverlayView.cornerActiveFill : OverlayView.cornerIdleFill).cgColor
+        if highlighted || cornerAlwaysVisible {
+            animateCorner(to: 1)
+        } else {
+            animateCorner(to: 0)
+        }
+    }
+
+    private func animateCorner(to alpha: CGFloat) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.25
+            cornerMarker.animator().alphaValue = alpha
+        }
     }
 
     // MARK: - Helpers

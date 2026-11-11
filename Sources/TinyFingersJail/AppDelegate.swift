@@ -149,6 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, EventGuardDelegate {
         windows.forEach { $0.level = .screenSaver }
         applyPresentationOptions()
         browser.overlay.showHint(exitHintText, duration: 12)
+        showCornerMarkerIfNeeded()
         ensureKeyboardFocus()
     }
 
@@ -247,9 +248,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, EventGuardDelegate {
     private func startCornerWatcher() {
         guard config.cornerExitEnabled else { return }
 
+        browser.overlay.configureCorner(
+            position: config.cornerExitPosition,
+            size: config.cornerExitSize,
+            alwaysVisible: config.cornerExitMarker == .always
+        )
+
         cornerWatcher.onProgress = { [weak self] progress in
             guard let self = self else { return }
             self.browser.overlay.setExitProgress(progress, message: self.cornerExitMessage)
+            self.browser.overlay.setCornerHighlighted(progress != nil)
         }
         cornerWatcher.onComplete = { [weak self] in
             // Chamado fora da main thread: devolve o teclado primeiro, encerra depois.
@@ -257,6 +265,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, EventGuardDelegate {
             DispatchQueue.main.async { self?.performUnlock() }
         }
         cornerWatcher.start()
+    }
+
+    /// A área de clique aparece junto com a dica de saída e some depois,
+    /// para a criança não ficar com um alvo na tela.
+    private func showCornerMarkerIfNeeded() {
+        guard config.cornerExitEnabled else { return }
+        switch config.cornerExitMarker {
+        case .never:
+            break
+        case .always:
+            browser.overlay.showCorner(duration: 0)
+        case .startup:
+            browser.overlay.showCorner(duration: 12)
+        }
     }
 
     private func performUnlock() {

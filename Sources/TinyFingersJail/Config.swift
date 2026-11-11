@@ -102,6 +102,16 @@ enum CornerPosition: String {
     }
 }
 
+/// Quando a área de clique do canto fica visível na tela.
+enum CornerMarkerMode: String {
+    /// Aparece ao abrir e some depois de alguns segundos (padrão).
+    case startup
+    /// Fica sempre visível.
+    case always
+    /// Nunca aparece.
+    case never
+}
+
 struct Config {
     var url: URL
     var allowedHosts: [String]
@@ -111,6 +121,7 @@ struct Config {
     var cornerExitSeconds: Double
     var cornerExitSize: Double
     var cornerExitPosition: CornerPosition
+    var cornerExitMarker: CornerMarkerMode
     var blockForceQuit: Bool
     var blockSessionTermination: Bool
 
@@ -137,6 +148,7 @@ struct Config {
             cornerExitSeconds: 5.0,
             cornerExitSize: 72,
             cornerExitPosition: .topRight,
+            cornerExitMarker: .startup,
             // ⌘⌥Esc (Forçar Encerramento) fica liberado de propósito: é saída de emergência.
             blockForceQuit: false,
             blockSessionTermination: false
@@ -184,6 +196,10 @@ struct Config {
         if let position = raw["cornerExitPosition"] as? String,
            let parsed = CornerPosition(rawValue: position) {
             config.cornerExitPosition = parsed
+        }
+        if let marker = raw["cornerExitMarker"] as? String,
+           let parsed = CornerMarkerMode(rawValue: marker) {
+            config.cornerExitMarker = parsed
         }
         if let value = raw["blockForceQuit"] as? Bool {
             config.blockForceQuit = value
@@ -244,6 +260,7 @@ struct Config {
             "cornerExitPosition": config.cornerExitPosition.rawValue,
             "cornerExitSeconds": config.cornerExitSeconds,
             "cornerExitSize": config.cornerExitSize,
+            "cornerExitMarker": config.cornerExitMarker.rawValue,
             "blockForceQuit": config.blockForceQuit,
             "blockSessionTermination": config.blockSessionTermination,
         ]

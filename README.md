@@ -15,6 +15,11 @@ param de funcionar.
 Nas duas aparece uma barra de progresso. Soltar antes do fim zera a contagem — é isso que
 impede a criança de sair por acidente.
 
+A área de clique do canto fica **desenhada na tela** (um quadrado translúcido com a palavra
+"sair") nos primeiros 12 segundos e depois desaparece, para a criança não ficar com um alvo na
+tela. Ela acende de novo sozinha quando você pressiona ali. Dá para deixá-la sempre visível, ou
+nunca, com `cornerExitMarker`.
+
 ---
 
 ## Instalação
@@ -126,6 +131,7 @@ Na primeira execução o app cria:
   "cornerExitPosition": "topRight",
   "cornerExitSeconds": 5,
   "cornerExitSize": 72,
+  "cornerExitMarker": "startup",
   "blockForceQuit": false,
   "blockSessionTermination": false
 }
@@ -142,6 +148,7 @@ Na primeira execução o app cria:
 | `cornerExitPosition` | `topRight`, `topLeft`, `bottomRight` ou `bottomLeft`. O TinyFingers usa o canto **superior esquerdo** para o painel dos pais, então o padrão aqui é o direito. |
 | `cornerExitSeconds` | Quantos segundos segurar no canto (entre 1 e 20). |
 | `cornerExitSize` | Tamanho da área do canto, em pontos (entre 24 e 400). |
+| `cornerExitMarker` | Quando a área de clique aparece: `startup` (ao abrir e depois some), `always` ou `never`. |
 | `blockForceQuit` | `true` bloqueia também ⌘⌥Esc (Forçar Encerramento). |
 | `blockSessionTermination` | Bloqueia desligar/reiniciar/encerrar sessão. Deixe `false` a menos que queira mesmo travar tudo. |
 
