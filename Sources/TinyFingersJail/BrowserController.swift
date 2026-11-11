@@ -43,6 +43,9 @@ final class BrowserController: NSObject, WKNavigationDelegate, WKUIDelegate {
         containerView.addSubview(overlay)
     }
 
+    /// A view que precisa ser o first responder para o teclado chegar no site.
+    var focusTarget: NSView { webView }
+
     func layoutSubviews() {
         webView.frame = containerView.bounds
         overlay.frame = containerView.bounds
@@ -87,6 +90,11 @@ final class BrowserController: NSObject, WKNavigationDelegate, WKUIDelegate {
         }
         // Só o site configurado. Um clique acidental em anúncio/link externo não leva a lugar nenhum.
         decisionHandler(config.allows(host: url.host) ? .allow : .cancel)
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // Sem isto o site pode ficar sem foco e parecer que "o teclado não funciona".
+        webView.window?.makeFirstResponder(webView)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

@@ -110,7 +110,7 @@ final class OverlayView: NSView {
     }
 
     /// `progress == nil` esconde o painel; caso contrário mostra a barra de saída.
-    func setExitProgress(_ progress: Double?, comboText: String, holdSeconds: Double) {
+    func setExitProgress(_ progress: Double?, message: String) {
         guard let progress = progress else {
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.2
@@ -120,7 +120,7 @@ final class OverlayView: NSView {
             return
         }
 
-        panelLabel.stringValue = "Segure \(comboText) por \(String(format: "%.0f", holdSeconds))s para sair"
+        panelLabel.stringValue = message
         panel.alphaValue = 1
         self.progress = progress
     }

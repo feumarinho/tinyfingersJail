@@ -71,5 +71,6 @@ Lembretes:
      Sem isso o Spotlight (⌘Espaço) e o ⌘Tab continuam funcionando.
   2. Depois de recompilar, a assinatura muda: remova e adicione o app
      de novo na lista de Acessibilidade (botão − e depois +).
-  3. Para sair do modo quiosque: segure ⌃⌥⌘ + Q por 3 segundos.
+  3. Para sair do modo quiosque: segure ⌃⌥⌘ + Q por 3 segundos,
+     ou clique e segure o canto superior direito da tela por 5 segundos.
 EOF

@@ -86,11 +86,31 @@ struct ExitCombo {
     }
 }
 
+enum CornerPosition: String {
+    case topRight
+    case topLeft
+    case bottomRight
+    case bottomLeft
+
+    var label: String {
+        switch self {
+        case .topRight: return "superior direito"
+        case .topLeft: return "superior esquerdo"
+        case .bottomRight: return "inferior direito"
+        case .bottomLeft: return "inferior esquerdo"
+        }
+    }
+}
+
 struct Config {
     var url: URL
     var allowedHosts: [String]
     var exit: ExitCombo
     var holdSeconds: Double
+    var cornerExitEnabled: Bool
+    var cornerExitSeconds: Double
+    var cornerExitSize: Double
+    var cornerExitPosition: CornerPosition
     var blockForceQuit: Bool
     var blockSessionTermination: Bool
 
@@ -113,7 +133,12 @@ struct Config {
             allowedHosts: [],
             exit: ExitCombo(),
             holdSeconds: 3.0,
-            blockForceQuit: true,
+            cornerExitEnabled: true,
+            cornerExitSeconds: 5.0,
+            cornerExitSize: 72,
+            cornerExitPosition: .topRight,
+            // ⌘⌥Esc (Forçar Encerramento) fica liberado de propósito: é saída de emergência.
+            blockForceQuit: false,
             blockSessionTermination: false
         )
 
@@ -143,6 +168,23 @@ struct Config {
             config.exit.option = set.contains("option") || set.contains("alt")
             config.exit.shift = set.contains("shift")
         }
+        if let value = raw["cornerExit"] as? Bool {
+            config.cornerExitEnabled = value
+        }
+        if let seconds = raw["cornerExitSeconds"] as? Double {
+            config.cornerExitSeconds = seconds
+        } else if let seconds = raw["cornerExitSeconds"] as? Int {
+            config.cornerExitSeconds = Double(seconds)
+        }
+        if let size = raw["cornerExitSize"] as? Double {
+            config.cornerExitSize = size
+        } else if let size = raw["cornerExitSize"] as? Int {
+            config.cornerExitSize = Double(size)
+        }
+        if let position = raw["cornerExitPosition"] as? String,
+           let parsed = CornerPosition(rawValue: position) {
+            config.cornerExitPosition = parsed
+        }
         if let value = raw["blockForceQuit"] as? Bool {
             config.blockForceQuit = value
         }
@@ -159,7 +201,13 @@ struct Config {
             config.holdSeconds = seconds
         }
 
+        if let value = env["TFJ_CORNER_SECONDS"], let seconds = Double(value) {
+            config.cornerExitSeconds = seconds
+        }
+
         config.holdSeconds = min(max(config.holdSeconds, 0.5), 15)
+        config.cornerExitSeconds = min(max(config.cornerExitSeconds, 1), 20)
+        config.cornerExitSize = min(max(config.cornerExitSize, 24), 400)
         if !config.exit.command && !config.exit.control && !config.exit.option {
             // Nunca aceitar uma combinação sem modificadores: a criança acertaria sozinha.
             config.exit = ExitCombo()
@@ -192,6 +240,10 @@ struct Config {
             "exitKey": "q",
             "exitModifiers": ["control", "option", "command"],
             "exitHoldSeconds": config.holdSeconds,
+            "cornerExit": config.cornerExitEnabled,
+            "cornerExitPosition": config.cornerExitPosition.rawValue,
+            "cornerExitSeconds": config.cornerExitSeconds,
+            "cornerExitSize": config.cornerExitSize,
             "blockForceQuit": config.blockForceQuit,
             "blockSessionTermination": config.blockSessionTermination,
         ]

@@ -5,7 +5,15 @@ embutido, e **tranca o Mac** enquanto a criança brinca: o teclado continua func
 site, mas Spotlight (⌘Espaço), ⌘Tab, Mission Control, ⌘Q, teclas de função e gestos do trackpad
 param de funcionar.
 
-Para sair: **segure ⌃⌥⌘ + Q por 3 segundos** (aparece uma barrinha de progresso na tela).
+**Duas formas de sair** (qualquer uma serve):
+
+| Saída | Como |
+| --- | --- |
+| Teclado | Segure **⌃⌥⌘ + Q** por 3 segundos |
+| Mouse | **Clique e segure o canto superior direito** da tela por 5 segundos |
+
+Nas duas aparece uma barra de progresso. Soltar antes do fim zera a contagem — é isso que
+impede a criança de sair por acidente.
 
 ---
 
@@ -42,10 +50,10 @@ detecta sozinho (em até 2 segundos) e ativa a trava completa — não precisa r
 1. Abra o `TinyFingersJail` (Launchpad, Spotlight ou `open /Applications/TinyFingersJail.app`).
 2. A tela toda vira o TinyFingers. Se você tiver mais de um monitor, os outros ficam pretos.
 3. A criança bate no teclado e mexe o mouse à vontade.
-4. Para sair, segure **⌃⌥⌘ + Q** (Control + Option + Command + Q) por 3 segundos.
+4. Para sair: **⌃⌥⌘Q por 3s** ou **clique e segure o canto superior direito por 5s**.
 
-Enquanto a combinação está pressionada aparece um painel com a barra de progresso. Se soltar
-qualquer tecla antes do fim, a contagem zera — é isso que impede a criança de sair por acidente.
+As três teclas modificadoras ficam vizinhas no canto inferior esquerdo do teclado (Control,
+Option, Command) — dá para apertar as três com a mão esquerda e o Q com a outra.
 
 ---
 
@@ -54,25 +62,48 @@ qualquer tecla antes do fim, a contagem zera — é isso que impede a criança d
 | Bloqueado | Como |
 | --- | --- |
 | Spotlight (⌘Espaço), ⌘Tab, ⌘Q, ⌘W, ⌘H, ⌃setas, atalhos com ⌘/⌃ | Event tap do sistema |
-| Mission Control, Exposé, teclas F1–F20, Esc | Event tap do sistema |
+| Mission Control, Exposé, teclas F1–F20, Esc, fn/globo | Event tap do sistema |
 | Teclas de mídia e volume | Event tap do sistema |
 | Gestos do trackpad (swipe entre Spaces, pinça, Mission Control) | Event tap do sistema |
 | Dock, barra de menus, menu Apple | Modo de apresentação do macOS |
-| Forçar Encerramento (⌘⌥Esc) | Modo de apresentação do macOS |
 | Sair do site (links, anúncios, pop-ups, janelas novas) | O navegador embutido só carrega `tinyfingers.net` |
 | Menu de contexto, seleção de texto, arrastar imagens | Script injetado na página |
 
 Letras, números e setas **continuam passando** para o site — é com elas que a brincadeira funciona.
 
+### Liberado de propósito
+
+**⌘⌥Esc (Forçar Encerramento)** passa de propósito: nenhuma criança acerta isso sem querer, e é
+uma saída de emergência garantida. Para bloquear também, use `"blockForceQuit": true` na
+configuração.
+
 ### O que não dá para bloquear
 
 - **Botão de força / desligar** e a tela de login: são tratados pelo próprio sistema.
-- **Trackpad/mouse físico**: a criança pode mover o cursor à vontade (é a graça do site), mas
-  como só existe uma janela em tela cheia, não há nada para clicar fora dela.
-- **Touch ID / Ctrl+⌘+Q (bloquear tela)** em algumas versões do macOS.
+- **Trackpad/mouse físico**: o cursor se move à vontade (é a graça do site), mas como só existe
+  uma janela em tela cheia, não há nada para clicar fora dela.
 
-Se algum dia o app travar e a combinação não responder, a saída de emergência é segurar o botão
-de força do Mac por alguns segundos.
+---
+
+## Proteções contra travamento
+
+Um event tap de teclado é **síncrono**: o sistema espera a resposta do app antes de entregar
+cada tecla. Se o app travar, o teclado do Mac inteiro para junto — e sem teclado não há como
+sair. Três camadas evitam isso:
+
+1. **O tap roda numa thread própria**, com run loop dedicado. Ele não depende da interface:
+   mesmo com a página consumindo 100% da main thread, as teclas continuam sendo processadas.
+   O callback do tap não faz nada de UI.
+2. **Watchdog**: a interface manda um "sinal de vida" a cada segundo. Se parar por **6
+   segundos**, o tap é desligado e o teclado volta inteiro para o sistema. Se a interface
+   voltar a responder, a trava religa sozinha.
+3. **Encerramento automático**: se a interface ficar travada por **20 segundos**, o app se
+   encerra sozinho. Dock e barra de menus voltam, e o Mac fica usável. Nunca é preciso
+   reiniciar a máquina por causa deste app.
+
+O watchdog ignora pausas do próprio sistema (Mac dormindo, carga alta) para não confundir sono
+com travamento. A contagem de saída também roda fora da main thread — a saída funciona mesmo
+com a tela congelada.
 
 ---
 
@@ -91,7 +122,11 @@ Na primeira execução o app cria:
   "exitKey": "q",
   "exitModifiers": ["control", "option", "command"],
   "exitHoldSeconds": 3,
-  "blockForceQuit": true,
+  "cornerExit": true,
+  "cornerExitPosition": "topRight",
+  "cornerExitSeconds": 5,
+  "cornerExitSize": 72,
+  "blockForceQuit": false,
   "blockSessionTermination": false
 }
 ```
@@ -102,8 +137,12 @@ Na primeira execução o app cria:
 | `allowedHosts` | Domínios extras liberados para navegação, além do domínio da `url`. |
 | `exitKey` | Tecla da combinação de saída (`a`–`z`, `0`–`9`, `space`, `escape`…). |
 | `exitModifiers` | Modificadores obrigatórios: `command`, `control`, `option`, `shift`. |
-| `exitHoldSeconds` | Quantos segundos segurar (entre 0,5 e 15). |
-| `blockForceQuit` | Bloqueia ⌘⌥Esc (Forçar Encerramento). |
+| `exitHoldSeconds` | Quantos segundos segurar a combinação (entre 0,5 e 15). |
+| `cornerExit` | Liga/desliga a saída pelo canto da tela. |
+| `cornerExitPosition` | `topRight`, `topLeft`, `bottomRight` ou `bottomLeft`. O TinyFingers usa o canto **superior esquerdo** para o painel dos pais, então o padrão aqui é o direito. |
+| `cornerExitSeconds` | Quantos segundos segurar no canto (entre 1 e 20). |
+| `cornerExitSize` | Tamanho da área do canto, em pontos (entre 24 e 400). |
+| `blockForceQuit` | `true` bloqueia também ⌘⌥Esc (Forçar Encerramento). |
 | `blockSessionTermination` | Bloqueia desligar/reiniciar/encerrar sessão. Deixe `false` a menos que queira mesmo travar tudo. |
 
 Se a combinação ficar sem nenhum modificador, o app volta ao padrão ⌃⌥⌘Q por segurança.
@@ -111,7 +150,8 @@ Se a combinação ficar sem nenhum modificador, o app volta ao padrão ⌃⌥⌘
 Para testar rapidinho sem editar o arquivo:
 
 ```bash
-TFJ_URL="https://exemplo.com" TFJ_HOLD_SECONDS=1 ./build/TinyFingersJail.app/Contents/MacOS/TinyFingersJail
+TFJ_URL="https://exemplo.com" TFJ_HOLD_SECONDS=1 TFJ_CORNER_SECONDS=2 \
+  ./build/TinyFingersJail.app/Contents/MacOS/TinyFingersJail
 ```
 
 ---
@@ -120,18 +160,20 @@ TFJ_URL="https://exemplo.com" TFJ_HOLD_SECONDS=1 ./build/TinyFingersJail.app/Con
 
 ```
 Sources/TinyFingersJail/
-  main.swift              ponto de entrada
-  AppDelegate.swift       janelas, modo quiosque, permissão, saída
-  KioskWindow.swift       janela sem bordas cobrindo a tela
-  BrowserController.swift WKWebView preso ao site
-  EventGuard.swift        event tap: engole atalhos e detecta a combinação de saída
-  OverlayView.swift       dica no topo e barra do "segure para sair"
-  Config.swift            config.json + combinação de teclas
+  main.swift                ponto de entrada
+  AppDelegate.swift         janelas, modo quiosque, permissão, sinal de vida, saída
+  KioskWindow.swift         janela sem bordas cobrindo a tela
+  BrowserController.swift   WKWebView preso ao site
+  EventGuard.swift          event tap em thread própria + watchdog + combinação de saída
+  CornerExitWatcher.swift   saída por clique-e-segure no canto da tela
+  HoldTracker.swift         contagem do "segure para sair", fora da main thread
+  OverlayView.swift         dica no topo e barra de progresso da saída
+  Config.swift              config.json, combinação de teclas, canto de saída
 Resources/Info.plist
 build.sh
 ```
 
-Detalhe importante: além do event tap, existe um monitor local de teclado dentro do app. Ou seja,
+Detalhe importante: além do event tap existe um monitor local de teclado dentro do app. Ou seja,
 **a combinação de saída funciona mesmo sem a permissão de Acessibilidade** — você nunca fica preso.
 
 ---
